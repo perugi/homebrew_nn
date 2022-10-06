@@ -8,6 +8,10 @@ def download():
     """Download the MNIST datase and store it to disk."""
     (training_inputs, training_labels), (test_inputs, test_labels) = mnist.load_data()
 
+    # Scale the images to range 0-1
+    training_inputs = training_inputs.astype("float32") / 255
+    test_inputs = test_inputs.astype("float32") / 255
+
     training_data = reshape(training_inputs, training_labels)
     test_data = reshape(test_inputs, test_labels)
 
