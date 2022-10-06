@@ -22,13 +22,28 @@ def softmax(z, der=False):
         return np.exp(z) / np.sum(np.exp(z))
 
 
+class QuadraticCost:
+    @staticmethod
+    def error(a, y, z):
+        """Return the error delta from the output layer."""
+        return np.multiply((a - y), sigmoid(z, der=True))
+
+
+class CrossEntropyCost:
+    @staticmethod
+    def error(a, y, z):
+        """Return the error delta from the output layer."""
+        return a - y
+
+
 class Network:
-    def __init__(self, layers):
+    def __init__(self, layers, cost_fn):
         """Initialize the neural network, based on the layers array, passed to it.
         The length of the array represents the number of layers (including the input and output layers.
         The elements of the array represent the number of neurons in the individual layers.
         The weights and biases are initialized to random values from the standard normal distribution (stdev=1, mean=0)"""
 
+        self.cost_fn = cost_fn
         self.num_layers = len(layers)
         self.layers = layers
         self.weights = []
@@ -58,7 +73,7 @@ class Network:
         Training data and test data are list of tuples, with the input and label values."""
 
         for epoch in range(epochs):
-            print(f"----- Training epoch {epoch}/{epochs} -----")
+            print(f"----- Training epoch {epoch+1}/{epochs} -----")
 
             # Shuffle and create mini batches.
             random.shuffle(training_data)
@@ -71,7 +86,9 @@ class Network:
                 self.update_mini_batch(mini_batch, learning_rate)
 
             if test_data:
-                print(f"Correct outputs: {self.evaluate(test_data)} out of {len(test_data)}")
+                print(
+                    f"Correct outputs: {self.evaluate(test_data)} out of {len(test_data)}"
+                )
 
     def update_mini_batch(self, mini_batch, learning_rate):
         """Update the weights and biases, based on a single mini batch.
@@ -124,10 +141,12 @@ class Network:
             activations.append(activation)
 
         # Calculate the output error, giving us also the errors of weights and biases for the output layer.
-        output_error = np.multiply(
-            self.cost_derivative(activations[-1], y),
-            sigmoid(weighted_inputs[-1], der=True),
-        )
+        # output_error = np.multiply(
+        #     self.cost_derivative(activations[-1], y),
+        #     sigmoid(weighted_inputs[-1], der=True),
+        # )
+        output_error = self.cost_fn.error(activations[-1], y, weighted_inputs[-1])
+
         errors_weights[-1] = np.dot(output_error, activations[-2].transpose())
         errors_biases[-1] = output_error
 
@@ -159,5 +178,4 @@ class Network:
 
     def cost_derivative(self, output_activations, y):
         """Return the vector or partial derivatives of the quadratic cost function."""
-        return_value = output_activations - y
         return output_activations - y
