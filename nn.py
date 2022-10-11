@@ -63,8 +63,9 @@ class Network:
         self.max_test_accuracy = 0
 
         for i in range(1, len(self.layers)):
-            # self.weights.append(np.random.randn(layers[i], layers[i - 1]) / np.sqrt[layers[i - 1]])
-            self.weights.append(np.random.randn(layers[i], layers[i - 1]))
+            self.weights.append(
+                np.random.randn(layers[i], layers[i - 1]) / np.sqrt(layers[i - 1])
+            )
             self.biases.append(np.random.randn(layers[i], 1))
 
     def forward(self, x):
