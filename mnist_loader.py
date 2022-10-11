@@ -36,13 +36,13 @@ def load_data():
     be the most convenient for use in our neural network code.
     """
     f = open("./data/mnist.pickle", "rb")
-    training_data, test_data = pickle.load(f)
+    training_data, test_data, validation_data = pickle.load(f)
     f.close()
 
     training_data = [
         (input, vectorized_result(label)) for (input, label) in training_data
     ]
-    return (training_data, test_data)
+    return (training_data, test_data, validation_data)
 
 
 def vectorized_result(j):

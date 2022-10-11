@@ -6,17 +6,28 @@ from keras.datasets import mnist
 
 def download():
     """Download the MNIST datase and store it to disk."""
-    (training_inputs, training_labels), (test_inputs, test_labels) = mnist.load_data()
+    (training_inputs, training_labels), (
+        validation_inputs,
+        validation_labels,
+    ) = mnist.load_data()
 
     # Scale the images to range 0-1
     training_inputs = training_inputs.astype("float32") / 255
-    test_inputs = test_inputs.astype("float32") / 255
+    validation_inputs = validation_inputs.astype("float32") / 255
 
     training_data = reshape(training_inputs, training_labels)
-    test_data = reshape(test_inputs, test_labels)
+    validation_data = reshape(validation_inputs, validation_labels)
+
+    # split the training data into training (50k) and test (10k)
+    test_data = training_data[-10000:]
+    training_data = training_data[:-10000]
+
+    print(f"training data: {len(training_data)}")
+    print(f"test data: {len(test_data)}")
+    print(f"validation data: {len(validation_data)}")
 
     f = open("./data/mnist.pickle", "wb")
-    pickle.dump((training_data, test_data), f)
+    pickle.dump((training_data, test_data, validation_data), f)
     f.close()
 
 

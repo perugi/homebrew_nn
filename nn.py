@@ -59,6 +59,7 @@ class Network:
         self.layers = layers
         self.weights = []
         self.biases = []
+        self.max_test_accuracy = 0
 
         for i in range(1, len(self.layers)):
             self.weights.append(np.random.randn(layers[i], layers[i - 1]))
@@ -84,7 +85,13 @@ class Network:
         return a
 
     def SGD(
-        self, training_data, epochs, mini_batch_size, learning_rate, test_data=None
+        self,
+        training_data,
+        epochs,
+        mini_batch_size,
+        learning_rate,
+        test_data=None,
+        lmbda=0,
     ):
         """Perform stochastic gradient descent by taking the training data and then for each
         learning epoch, shuffle it, separate into mini batches and for each mini batch call the
@@ -101,14 +108,19 @@ class Network:
             random.shuffle(training_data)
             for i in range(0, len(training_data), mini_batch_size):
                 mini_batch = training_data[i : i + mini_batch_size]
-                self.update_mini_batch(mini_batch, learning_rate)
-
-            if test_data:
-                print(
-                    f"Test Accuracy: {self.evaluate(test_data) / len(test_data) * 100}%"
+                self.update_mini_batch(
+                    mini_batch, learning_rate, lmbda, len(training_data)
                 )
 
-    def update_mini_batch(self, mini_batch, learning_rate):
+            if test_data:
+                test_accuracy = self.evaluate(test_data) / len(test_data) * 100
+                if test_accuracy > self.max_test_accuracy:
+                    self.max_test_accuracy = test_accuracy
+                print(f"Test Accuracy: {test_accuracy}%")
+
+        print(f"NN training finished. Max test accuracy: {self.max_test_accuracy}%")
+
+    def update_mini_batch(self, mini_batch, learning_rate, lmbda, len_training):
         """Update the weights and biases, based on a single mini batch.
         The errors are calculated using the backprop algorigthm, summed and averaged.
         The weights and biases are updated using a learning rate, passed to the function."""
@@ -129,8 +141,10 @@ class Network:
 
         # Average the sum by dividing by the number of samples and update the existing
         # weights and biases by subtracting the error, multiplied by the learning rate.
+        # If lambda is non-zero, L2 regularization is active.
         self.weights = [
-            w - (learning_rate / len(mini_batch)) * ew
+            (1 - learning_rate * lmbda / len_training) * w
+            - (learning_rate / len(mini_batch)) * ew
             for w, ew in zip(self.weights, errors_weights)
         ]
         self.biases = [
