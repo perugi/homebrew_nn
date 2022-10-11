@@ -3,30 +3,34 @@ import random
 import numpy as np
 
 
-def sigmoid(z, der=False):
-    """Return the sigmoid or sigmoid derivative of value z, based on the der value."""
-    if der:
-        return sigmoid(z) * (1 - sigmoid(z))
-    else:
-        return 1.0 / (1.0 + np.exp(-z))
+class Sigmoid:
+    @staticmethod
+    def activation(z, der=False):
+        """Return the sigmoid or sigmoid derivative of value z, based on the der value."""
+        if der:
+            return Sigmoid.activation(z) * (1 - Sigmoid.activation(z))
+        else:
+            return 1.0 / (1.0 + np.exp(-z))
 
 
-def softmax(z, der=False):
-    """Return the softmax or softmax derivative of value z, based on the der value."""
-    # Shift the z values so the highest is 0 (to avoid calculating very large numbers).
-    z -= np.max(z)
+class Softmax:
+    @staticmethod
+    def activation(z, der=False):
+        """Return the softmax or softmax derivative of value z, based on the der value."""
+        # Shift the z values so the highest is 0 (to avoid calculating very large numbers).
+        z -= np.max(z)
 
-    if der:
-        return np.exp(z) / np.sum(np.exp(z)) * (1 - np.exp(z) / np.sum(np.exp(z)))
-    else:
-        return np.exp(z) / np.sum(np.exp(z))
+        if der:
+            return np.exp(z) / np.sum(np.exp(z)) * (1 - np.exp(z) / np.sum(np.exp(z)))
+        else:
+            return np.exp(z) / np.sum(np.exp(z))
 
 
 class QuadraticCost:
     @staticmethod
     def error(a, y, z):
         """Return the error delta from the output layer."""
-        return np.multiply((a - y), sigmoid(z, der=True))
+        return np.multiply((a - y), Sigmoid.activation(z, der=True))
 
 
 class CrossEntropyCost:
@@ -36,14 +40,22 @@ class CrossEntropyCost:
         return a - y
 
 
+class LogLikelihoodCost:
+    @staticmethod
+    def error(a, y, z):
+        """Return the error delta from the output layer."""
+        return a - y
+
+
 class Network:
-    def __init__(self, layers, cost_fn=QuadraticCost):
+    def __init__(self, layers, cost_fn=QuadraticCost, output_fn=Sigmoid):
         """Initialize the neural network, based on the layers array, passed to it.
         The length of the array represents the number of layers (including the input and output layers.
         The elements of the array represent the number of neurons in the individual layers.
         The weights and biases are initialized to random values from the standard normal distribution (stdev=1, mean=0)"""
 
         self.cost_fn = cost_fn
+        self.output_fn = output_fn
         self.layers = layers
         self.weights = []
         self.biases = []
@@ -60,8 +72,14 @@ class Network:
         # Use the input as the activation of the first layer
         a = x
 
-        for w, b in zip(self.weights, self.biases):
-            a = sigmoid(np.dot(w, a) + b)
+        for i, (w, b) in enumerate(zip(self.weights, self.biases)):
+            z = np.dot(w, a) + b
+            if i < len(self.weights) - 1:
+                # Up to the output layer, use the sigmoid activation fn.
+                a = Sigmoid.activation(z)
+            else:
+                # For the output layer, use the defined activation fn.
+                a = self.output_fn.activation(z)
 
         return a
 
@@ -99,7 +117,7 @@ class Network:
         errors_biases = [np.zeros(b.shape) for b in self.biases]
 
         # Use the backprop algorithm and sum the weights and biases from all the samples
-        # in tne mini batch.
+        # in the mini batch.
         for x, y in mini_batch:
             sample_errors_weights, sample_errors_biases = self.backprop(x, y)
             errors_weights = [
@@ -132,12 +150,17 @@ class Network:
         weighted_inputs = []
         activations = [x]
 
-        for layer_weights, layer_biases in zip(self.weights, self.biases):
-            weighted_input = np.dot(layer_weights, activations[-1]) + layer_biases
-            activation = sigmoid(weighted_input)
+        for i, (w, b) in enumerate(zip(self.weights, self.biases)):
+            z = np.dot(w, activations[-1]) + b
+            if i < len(self.weights) - 1:
+                # Up to the output layer, use the sigmoid activation fn.
+                a = Sigmoid.activation(z)
+            else:
+                # For the output layer, use the defined activation fn.
+                a = self.output_fn.activation(z)
 
-            weighted_inputs.append(weighted_input)
-            activations.append(activation)
+            weighted_inputs.append(z)
+            activations.append(a)
 
         # Calculate the output error, giving us also the errors of weights and biases for the output layer.
         output_error = self.cost_fn.error(activations[-1], y, weighted_inputs[-1])
@@ -150,7 +173,7 @@ class Network:
         for layer_no in range(2, len(self.layers)):
             layer_error = np.multiply(
                 np.dot(self.weights[-layer_no + 1].transpose(), layer_error),
-                sigmoid(weighted_inputs[-layer_no], der=True),
+                Sigmoid.activation(weighted_inputs[-layer_no], der=True),
             )
 
             errors_weights[-layer_no] = np.dot(

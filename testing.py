@@ -19,7 +19,16 @@ training_data, test_data = mnist_loader.load_data()
 #     net = nn.Network([784, 30, 10])
 #     net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
 # print(training_data[0][0].shape)
+print("")
+print("Training with a Softmax output activation fn and Log-likelihood cost")
+for i in range(1, 4):
+    print("")
+    print(f" NN no. {i} ".center(30, "#"))
+    print("")
+    net = nn.Network([784, 30, 10], nn.LogLikelihoodCost, output_fn=nn.Softmax)
+    net.SGD(training_data, 30, 10, 0.5, test_data=test_data)
 
+print("")
 print("Training with Quadratic CF")
 for i in range(1, 4):
     print("")
@@ -28,10 +37,11 @@ for i in range(1, 4):
     net = nn.Network([784, 30, 10], nn.QuadraticCost)
     net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
 
+print("")
 print("Training with Cross Entropy CF")
 for i in range(1, 4):
     print("")
-    print(f"##### NN no. {i} #####")
+    print(f" NN no. {i} ".center(30, "#"))
     print("")
     net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
     net.SGD(training_data, 30, 10, 0.5, test_data=test_data)
