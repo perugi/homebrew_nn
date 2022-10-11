@@ -52,7 +52,8 @@ class Network:
         """Initialize the neural network, based on the layers array, passed to it.
         The length of the array represents the number of layers (including the input and output layers.
         The elements of the array represent the number of neurons in the individual layers.
-        The weights and biases are initialized to random values from the standard normal distribution (stdev=1, mean=0)"""
+        The weights are initialized to random values with mean = 0 and stdev=1/sqrt(no_neurons)
+        The biases are initialized to random values from the standard normal distribution (stdev=1, mean=0)"""
 
         self.cost_fn = cost_fn
         self.output_fn = output_fn
@@ -62,6 +63,7 @@ class Network:
         self.max_test_accuracy = 0
 
         for i in range(1, len(self.layers)):
+            # self.weights.append(np.random.randn(layers[i], layers[i - 1]) / np.sqrt[layers[i - 1]])
             self.weights.append(np.random.randn(layers[i], layers[i - 1]))
             self.biases.append(np.random.randn(layers[i], 1))
 
@@ -91,6 +93,7 @@ class Network:
         mini_batch_size,
         learning_rate,
         test_data=None,
+        reg=""
         lmbda=0,
     ):
         """Perform stochastic gradient descent by taking the training data and then for each
