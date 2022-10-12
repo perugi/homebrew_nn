@@ -28,6 +28,11 @@ class Softmax:
 
 class QuadraticCost:
     @staticmethod
+    def cost(a, y):
+        """Return the cost, based on the output of the NN and the label value"""
+        return 0.5 * (np.linalg.norm(y - a)) ** 2
+
+    @staticmethod
     def error(a, y, z):
         """Return the error delta from the output layer."""
         return np.multiply((a - y), Sigmoid.activation(z, der=True))
@@ -35,12 +40,22 @@ class QuadraticCost:
 
 class CrossEntropyCost:
     @staticmethod
+    def cost(a, y):
+        """Return the cost, based on the output of the NN and the label value"""
+        return -np.sum(np.nan_to_num(y * np.log(a) + (1 - y) * np.log(1 - a)))
+
+    @staticmethod
     def error(a, y, z):
         """Return the error delta from the output layer."""
         return a - y
 
 
 class LogLikelihoodCost:
+    @staticmethod
+    def cost(a, y):
+        """Return the cost, based on the output of the NN and the label value"""
+        return -np.nan_to_num(np.log(a[y]))
+
     @staticmethod
     def error(a, y, z):
         """Return the error delta from the output layer."""
@@ -93,9 +108,13 @@ class Network:
         epochs,
         mini_batch_size,
         learning_rate,
-        test_data=None,
         reg="",
         lmbda=0,
+        monitor_training_accuracy=False,
+        monitor_training_cost=False,
+        monitor_test_accuracy=False,
+        monitor_test_cost=False,
+        test_data=None,
     ):
         """Perform stochastic gradient descent by taking the training data and then for each
         learning epoch, shuffle it, separate into mini batches and for each mini batch call the
@@ -115,6 +134,8 @@ class Network:
                 self.update_mini_batch(
                     mini_batch, learning_rate, reg, lmbda, len(training_data)
                 )
+
+            # Run training and/or test data through the network in and display the cost and accuracy.
 
             if test_data:
                 test_accuracy = self.evaluate(test_data) / len(test_data) * 100
@@ -215,17 +236,54 @@ class Network:
 
         return errors_weights, errors_biases
 
-    def evaluate(self, test_data):
+    def accuracy(self, data, convert=False):
         """Return the number of correct outputs from the neural network, based on test_data,
         a list of tuples, containing the inputs with matchind labels."""
 
         count_correct = 0
-        for (x, y) in test_data:
-            if np.argmax(self.forward(x)) == y:
-                count_correct += 1
+
+        for (x, y) in data:
+            if convert:
+                if np.argmax(self.forward(x)) == np.argmax(y):
+                    count_correct += 1
+            else:
+                if np.argmax(self.forward(x)) == y:
+                    count_correct += 1
 
         return count_correct
+
+    def total_cost(self, data, reg, lmbda, convert=False):
+        """Return the total cost of the outputs, averaged over all the input data and labels."""
+
+        total_cost = 0.0
+
+        for (x, y) in data:
+            if convert:
+                total_cost += self.cost_fn.cost(
+                    self.forward(x), self.vectorized_result(y)
+                )
+            else:
+                total_cost += self.cost_fn.cost(self.forward(x), y)
+
+        # If regularization is used, apply the appropriate regularization term to the cost function
+        if reg == "L1":
+            total_cost += lmbda * sum(np.linalg.norm(w) for w in self.weights)
+        elif reg == "L2":
+            total_cost += (
+                lmbda * 0.5 * sum(np.linalg.norm(w) ** 2 for w in self.weights)
+            )
+
+        total_cost /= len(data)
+
+        return total_cost
 
     def cost_derivative(self, output_activations, y):
         """Return the vector or partial derivatives of the quadratic cost function."""
         return output_activations - y
+
+    def vectorized_result(self, y, len):
+        """Return a unit vector with the 1 on the position, as defined by y. Length of the
+        unit vector based on the len input."""
+        vec = np.zeros(len, 1)
+        vec[y] = 1.0
+        return vec
