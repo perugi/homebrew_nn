@@ -75,7 +75,6 @@ class Network:
         self.layers = layers
         self.weights = []
         self.biases = []
-        self.max_test_accuracy = 0
 
         for i in range(1, len(self.layers)):
             self.weights.append(
@@ -136,14 +135,44 @@ class Network:
                 )
 
             # Run training and/or test data through the network in and display the cost and accuracy.
+            training_accuracies = []
+            training_costs = []
+            test_accuracies = []
+            test_costs = []
 
-            if test_data:
-                test_accuracy = self.evaluate(test_data) / len(test_data) * 100
-                if test_accuracy > self.max_test_accuracy:
-                    self.max_test_accuracy = test_accuracy
+            if monitor_training_cost:
+                training_cost = self.total_cost(training_data, reg, lmbda)
+                print(f"Training Cost: {training_cost}")
+                training_costs.append(training_cost)
+
+            if monitor_training_accuracy:
+                training_accuracy = (
+                    self.accuracy(training_data, convert=True)
+                    / len(training_data)
+                    * 100
+                )
+                print(f"Training Accuracy: {training_accuracy}%")
+                training_accuracies.append(training_accuracy)
+
+            if monitor_test_cost:
+                test_cost = self.total_cost(test_data, reg, lmbda, convert=True)
+                print(f"Test Cost: {test_cost}")
+                test_costs.append(test_cost)
+
+            if monitor_test_accuracy:
+                test_accuracy = self.accuracy(test_data) / len(test_data) * 100
                 print(f"Test Accuracy: {test_accuracy}%")
+                test_accuracies.append(test_accuracy)
 
-        print(f"NN training finished. Max test accuracy: {self.max_test_accuracy}%")
+        print(f"NN training finished.")
+        if monitor_training_cost:
+            print(f"Min training cost: {min(training_costs)}%")
+        if monitor_training_accuracy:
+            print(f"Max training accuracy: {max(training_accuracies)}%")
+        if monitor_test_cost:
+            print(f"Min test cost: {min(test_costs)}%")
+        if monitor_test_accuracy:
+            print(f"Max test accuracy: {max(test_accuracies)}%")
 
     def update_mini_batch(self, mini_batch, learning_rate, reg, lmbda, len_training):
         """Update the weights and biases, based on a single mini batch.
@@ -260,7 +289,7 @@ class Network:
         for (x, y) in data:
             if convert:
                 total_cost += self.cost_fn.cost(
-                    self.forward(x), self.vectorized_result(y)
+                    self.forward(x), self.vectorized_result(y, 10)
                 )
             else:
                 total_cost += self.cost_fn.cost(self.forward(x), y)
@@ -284,6 +313,6 @@ class Network:
     def vectorized_result(self, y, len):
         """Return a unit vector with the 1 on the position, as defined by y. Length of the
         unit vector based on the len input."""
-        vec = np.zeros(len, 1)
+        vec = np.zeros((len, 1))
         vec[y] = 1.0
         return vec
