@@ -115,6 +115,7 @@ class Network:
         monitor_test_cost=False,
         test_data=None,
         no_improvement_in_n=0,
+        learning_schedule=0,
     ):
         """Perform stochastic gradient descent by taking the training data and then for each
         learning epoch, shuffle it, separate into mini batches and for each mini batch call the
@@ -122,14 +123,27 @@ class Network:
         If test data is passed to the function, print the accuracy of the nn on the test data
         at the end of each epoch.
 
-        Training data and test data are list of tuples, with the input and label values."""
+        Training data and test data are list of tuples, with the input and label values.
+
+        epochs -- max number of epochs to be trained (SGD can finish sooner if no_improvement_in_n
+            is active)
+        reg -- "L1", "L2" or "", based on regularization to be used
+        lmbda -- regularization parameter, active when reg == "L1" or "L2"
+        monitor_*_* -- after each epoch, print out the monitored value
+        no_improvement_in_n -- automatically finish training if no improvement in test accuracy
+            for n epochs (0 - not active, run for pre-designated number of epochs)
+        learning_schedule -- number of learning rate halvings when no_improvement_in_n activates
+            (0 - terminate immediately)"""
 
         # Run training and/or test data through the network in and display the cost and accuracy.
         training_accuracies = [0]
         training_costs = []
         test_accuracies = [0]
         test_costs = []
-        improvement_counter = 0
+        no_improvement = 0
+
+        active_learning_rate = learning_rate
+        no_halvings = 0
 
         for epoch in range(epochs):
             print(f" Training epoch {epoch+1} ".center(30, "-"))
@@ -139,7 +153,7 @@ class Network:
             for i in range(0, len(training_data), mini_batch_size):
                 mini_batch = training_data[i : i + mini_batch_size]
                 self.update_mini_batch(
-                    mini_batch, learning_rate, reg, lmbda, len(training_data)
+                    mini_batch, active_learning_rate, reg, lmbda, len(training_data)
                 )
 
             if monitor_training_cost:
@@ -169,16 +183,31 @@ class Network:
                 if no_improvement_in_n:
                     # If the test accuracy improves, reset the improvement_counter
                     if test_accuracy > max(test_accuracies[:-1]):
-                        improvement_counter = 0
+                        no_improvement = 0
                     else:
-                        improvement_counter += 1
-                    print(f"Improvement counter: {improvement_counter}")
+                        no_improvement += 1
 
-                    if improvement_counter == no_improvement_in_n:
-                        print(
-                            f"No improvement in {no_improvement_in_n} epochs, finishing training."
-                        )
-                        break
+                    if no_improvement == no_improvement_in_n:
+                        if learning_schedule:
+                            no_improvement = 0
+                            active_learning_rate = active_learning_rate / 2
+                            no_halvings += 1
+                            # When we are more than the designated number of halvings from the original
+                            # learning rate, finish training.
+                            if no_halvings > learning_schedule:
+                                print(
+                                    f"No_improvement in {no_improvement_in_n} epochs, all halvings completed, finishing training."
+                                )
+                                break
+                            else:
+                                print(
+                                    f"No improvement in {no_improvement_in_n} epochs, halving learning rate to {active_learning_rate}."
+                                )
+                        else:
+                            print(
+                                f"No improvement in {no_improvement_in_n} epochs, finishing training."
+                            )
+                            break
 
         print(f"NN training finished.")
         if monitor_training_cost:
