@@ -69,23 +69,19 @@ training_data, test_data, validation_data = mnist_loader.load_data()
 
 print("")
 print("Training with Cross Entropy CF")
-for i in range(1, 4):
-    print("")
-    print(f" NN no. {i} ".center(30, "#"))
-    print("")
-    net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
-    net.SGD(
-        training_data,
-        1000,
-        10,
-        0.5,
-        reg="L2",
-        lmbda=5.0,
-        monitor_training_cost=True,
-        monitor_training_accuracy=True,
-        monitor_test_cost=True,
-        monitor_test_accuracy=True,
-        test_data=test_data,
-        no_improvement_in_n=10,
-        learning_schedule=7,
-    )
+net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
+net.SGD(
+    training_data,
+    1000,
+    10,
+    0.5,
+    reg="L2",
+    lmbda=5.0,
+    monitor_training_cost=True,
+    monitor_training_accuracy=True,
+    monitor_test_cost=True,
+    monitor_test_accuracy=True,
+    test_data=test_data,
+    no_improvement_in_n=10,
+    learning_schedule=7,
+)
