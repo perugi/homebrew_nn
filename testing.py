@@ -46,7 +46,7 @@ for i in range(1, 4):
     net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
     net.SGD(
         training_data,
-        30,
+        100,
         10,
         0.5,
         reg="",
@@ -56,6 +56,7 @@ for i in range(1, 4):
         monitor_test_cost=True,
         monitor_test_accuracy=True,
         test_data=test_data,
+        no_improvement_in_n=3,
     )
 
 # print("")
