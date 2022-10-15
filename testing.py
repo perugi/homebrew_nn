@@ -67,12 +67,31 @@ training_data, test_data, validation_data = mnist_loader.load_data()
 # net = nn.Network([784, 100, 10], nn.LogLikelihoodCost, output_fn=nn.Softmax)
 # net.SGD(training_data, 60, 10, 0.5, test_data=test_data, reg="L1", lmbda=5.0)
 
+# print("")
+# print("Training with Cross Entropy CF")
+# net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
+# net.SGD(
+#     training_data,
+#     1000,
+#     10,
+#     0.5,
+#     reg="L2",
+#     lmbda=5.0,
+#     monitor_training_cost=True,
+#     monitor_training_accuracy=True,
+#     monitor_test_cost=True,
+#     monitor_test_accuracy=True,
+#     test_data=test_data,
+#     no_improvement_in_n=10,
+#     learning_schedule=7,
+# )
+
 print("")
 print("Training with Cross Entropy CF")
-net = nn.Network([784, 30, 10], nn.CrossEntropyCost)
+net = nn.Network([784, 30, 30, 30, 10], nn.CrossEntropyCost)
 net.SGD(
     training_data,
-    1000,
+    30,
     10,
     0.5,
     reg="L2",
@@ -82,6 +101,4 @@ net.SGD(
     monitor_test_cost=True,
     monitor_test_accuracy=True,
     test_data=test_data,
-    no_improvement_in_n=10,
-    learning_schedule=7,
 )
